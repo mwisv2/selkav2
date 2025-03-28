@@ -14,7 +14,7 @@ export default function HomePage() {
             </div>
           </div>
           <p className="text-lg text-muted-foreground">
-            Your personalized workout plan based on your body, goals, and preferences.
+            Your personalized workout plan based on your body, goals and preferences.
           </p>
           <div className="pt-2 space-y-3">
             <HomeButtons />
