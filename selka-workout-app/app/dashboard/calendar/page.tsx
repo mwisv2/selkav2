@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +8,6 @@ import { Dumbbell } from "lucide-react"
 const generateWorkouts = (userProfile: any) => {
   const workouts = []
   if (userProfile && userProfile.fitnessGoal && userProfile.experienceLevel) {
-    // Simplified workout generation logic
     if (userProfile.fitnessGoal === "strength") {
       workouts.push({ day: "Monday", title: "Upper Body Strength" })
       workouts.push({ day: "Wednesday", title: "Lower Body Strength" })
@@ -33,7 +30,6 @@ export default function CalendarPage() {
   const [selectedDateEvents, setSelectedDateEvents] = useState<any[]>([])
   const [workoutEvents, setWorkoutEvents] = useState<{ date: Date; type: string; completed: boolean }[]>([])
 
-  // Function to check if a date has a workout
   const hasWorkout = (date: Date) => {
     return workoutEvents.some(
       (event) =>
@@ -43,7 +39,6 @@ export default function CalendarPage() {
     )
   }
 
-  // Function to get workouts for a specific date
   const getWorkoutsForDate = (date: Date) => {
     return workoutEvents.filter(
       (event) =>
@@ -53,7 +48,6 @@ export default function CalendarPage() {
     )
   }
 
-  // Handle date change
   const handleDateChange = (newDate: Date | undefined) => {
     setDate(newDate)
     if (newDate) {
@@ -64,35 +58,24 @@ export default function CalendarPage() {
   }
 
   useEffect(() => {
-    // Load completed workouts from localStorage
     const completedWorkouts = JSON.parse(localStorage.getItem("completedWorkouts") || "[]")
-
-    // Convert to calendar events
     const events = completedWorkouts.map((workout: any) => ({
       date: new Date(workout.completedDate),
       type: workout.title,
       completed: true,
     }))
-
-    // Load user profile to get scheduled workouts
     const profile = localStorage.getItem("userProfile")
     if (profile) {
       const userProfile = JSON.parse(profile)
-
-      // Generate workouts based on user profile
       const generatedWorkouts = generateWorkouts(userProfile)
-
-      // Add future workouts to calendar
       const today = new Date()
       const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
       generatedWorkouts.forEach((workout: any, index: number) => {
-        // Find the next occurrence of this weekday
         const workoutDay = weekdays.indexOf(workout.day)
         const daysToAdd = (workoutDay + 7 - today.getDay()) % 7
-
         const workoutDate = new Date(today)
-        workoutDate.setDate(today.getDate() + daysToAdd + index * 7) // Add weeks for future occurrences
+        workoutDate.setDate(today.getDate() + daysToAdd + index * 7)
 
         events.push({
           date: workoutDate,
@@ -101,7 +84,6 @@ export default function CalendarPage() {
         })
       })
     }
-
     setWorkoutEvents(events)
   }, [])
 
@@ -131,21 +113,23 @@ export default function CalendarPage() {
                 workout: "bg-primary/10 font-bold",
               }}
               components={{
-                DayContent: (props) => {
-                  const workouts = getWorkoutsForDate(props.date)
+                Day: ({ date, className, ...props }: any) => {
+                  const workouts = getWorkoutsForDate(date)
                   return (
-                    <div className="relative h-full w-full p-2">
-                      <div>{props.date.getDate()}</div>
-                      {workouts.length > 0 && (
-                        <div className="absolute bottom-1 right-1">
-                          <div
-                            className={`h-1.5 w-1.5 rounded-full ${workouts[0].completed ? "bg-green-500" : "bg-primary"}`}
-                          />
-                        </div>
-                      )}
+                    <div
+                      className={`${
+                        workouts.length > 0
+                          ? workouts[0].completed
+                            ? "bg-green-500"
+                            : "bg-primary/10"
+                          : ""
+                      } rounded-full p-2 ${className}`}
+                      {...props}
+                    >
+                      {date.getDate()}
                     </div>
                   )
-                },
+                }
               }}
             />
           </CardContent>
@@ -209,4 +193,3 @@ export default function CalendarPage() {
     </div>
   )
 }
-

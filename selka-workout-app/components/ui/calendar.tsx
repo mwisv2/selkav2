@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { DayPicker } from "react-day-picker"
@@ -8,6 +6,32 @@ import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
+
+// Define custom props for the Button component
+interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  direction: "prev" | "next"
+}
+
+// Custom Day component to render workout status
+const CustomDay = ({ date, className, ...props }: any) => {
+  // This is where you would check if the date has a workout
+  const hasWorkout = (date: Date) => {
+    // Logic to check if the workout exists for this date
+    return false; // Replace with your actual check, such as from state or props
+  }
+
+  return (
+    <button
+      {...props}
+      className={cn(
+        className,
+        hasWorkout(date) ? "bg-green-500 text-white" : "bg-transparent"
+      )}
+    >
+      {date.getDate()}
+    </button>
+  )
+}
 
 function Calendar({
   className,
@@ -54,13 +78,30 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+        Button: ({ direction, ...props }: CustomButtonProps) => {
+          return (
+            <button
+              {...props} // Pass button props to the button
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+              )}
+            >
+              {direction === "prev" ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </button>
+          )
+        },
+        Day: CustomDay, // Custom component to render each day
       }}
       {...props}
     />
   )
 }
+
 Calendar.displayName = "Calendar"
 
 export { Calendar }
