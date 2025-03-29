@@ -62,35 +62,14 @@ const exerciseDatabase: Exercise[] = [
 export function generateWorkouts(userProfile: any): Workout[] {
   // Generate workouts based on user equipment and preferences
   const daysPerWeek = Number.parseInt(userProfile.daysPerWeek || "3")
-  const userEquipment = Array.isArray(userProfile.equipment) ? userProfile.equipment : [userProfile.equipment || "No Equipment (Bodyweight only)"]
+  const userEquipment = userProfile.equipment || ["No Equipment (Bodyweight only)"]
   const timePerDay = Number.parseInt(userProfile.timePerDay || "45")
 
   // Filter exercises based on available equipment
   const availableExercises = exerciseDatabase.filter((exercise) =>
-    exercise.equipment.some((eq) => userEquipment.includes(eq))
+    exercise.equipment.some((eq) => userEquipment.includes(eq)),
   )
 
-  // Handle case where no exercises match the equipment
-  if (availableExercises.length === 0) {
-    // Fallback to bodyweight exercises
-    console.warn("No exercises match the user's equipment. Falling back to bodyweight exercises.")
-    const bodyweightExercises = exerciseDatabase.filter((exercise) =>
-      exercise.equipment.includes("No Equipment (Bodyweight only)")
-    )
-    
-    if (bodyweightExercises.length > 0) {
-      // Use bodyweight exercises as fallback
-      return generateWorkoutsWithExercises(bodyweightExercises, daysPerWeek, timePerDay)
-    } else {
-      // Return an empty array if nothing is available
-      return []
-    }
-  }
-  
-  return generateWorkoutsWithExercises(availableExercises, daysPerWeek, timePerDay)
-}
-
-function generateWorkoutsWithExercises(availableExercises: Exercise[], daysPerWeek: number, timePerDay: number): Workout[] {
   // Determine number of exercises per workout based on time
   const exercisesPerWorkout = timePerDay <= 30 ? 3 : timePerDay <= 45 ? 4 : timePerDay <= 60 ? 5 : 6
 
@@ -189,36 +168,6 @@ function selectExercisesForBodyParts(bodyParts: string[], availableExercises: Ex
     (ex) => !ex.compound && flatBodyParts.some((part) => ex.bodyPart === part),
   )
 
-  // If no exercises match the body parts, use any available exercises
-  if (compoundExercises.length === 0 && isolationExercises.length === 0) {
-    // Prioritize compounds from available exercises
-    const anyCompounds = availableExercises.filter(ex => ex.compound)
-    const anyIsolations = availableExercises.filter(ex => !ex.compound)
-    
-    const selectedExercises = []
-    // Try to get at least some exercises
-    while (selectedExercises.length < count && (anyCompounds.length > 0 || anyIsolations.length > 0)) {
-      if (selectedExercises.length < Math.ceil(count * 0.7) && anyCompounds.length > 0) {
-        // Add a compound
-        const randomIndex = Math.floor(Math.random() * anyCompounds.length)
-        selectedExercises.push(anyCompounds[randomIndex].name)
-        anyCompounds.splice(randomIndex, 1)
-      } else if (anyIsolations.length > 0) {
-        // Add an isolation
-        const randomIndex = Math.floor(Math.random() * anyIsolations.length)
-        selectedExercises.push(anyIsolations[randomIndex].name)
-        anyIsolations.splice(randomIndex, 1)
-      } else if (anyCompounds.length > 0) {
-        // Add remaining compounds if no isolations are left
-        const randomIndex = Math.floor(Math.random() * anyCompounds.length)
-        selectedExercises.push(anyCompounds[randomIndex].name)
-        anyCompounds.splice(randomIndex, 1)
-      }
-    }
-    
-    return selectedExercises
-  }
-
   // Randomly select, prioritizing compounds
   const compoundCount = Math.min(Math.ceil(count * 0.7), compoundExercises.length)
   const isolationCount = Math.min(count - compoundCount, isolationExercises.length)
@@ -227,20 +176,8 @@ function selectExercisesForBodyParts(bodyParts: string[], availableExercises: Ex
   const selectedCompounds = shuffle(compoundExercises).slice(0, compoundCount)
   const selectedIsolations = shuffle(isolationExercises).slice(0, isolationCount)
 
-  // If we don't have enough exercises, try to fill with whatever is available
-  const combined = [...selectedCompounds, ...selectedIsolations]
-  if (combined.length < count) {
-    const remaining = availableExercises.filter(
-      ex => !combined.some(selected => selected.name === ex.name)
-    )
-    
-    // Add remaining exercises until we reach the count or run out
-    const additionalCount = Math.min(count - combined.length, remaining.length)
-    combined.push(...shuffle(remaining).slice(0, additionalCount))
-  }
-
-  // Return exercise names
-  return combined.map((ex) => ex.name)
+  // Combine and return exercise names
+  return [...selectedCompounds, ...selectedIsolations].map((ex) => ex.name)
 }
 
 function flattenBodyParts(bodyParts: string[]): string[] {
@@ -278,11 +215,6 @@ function shuffle<T>(array: T[]): T[] {
 
 // Update the getWorkoutsWithSets function to account for 1RM
 export function getWorkoutsWithSets(workouts: Workout[], userProfile: any): any[] {
-  // Handle empty workouts array
-  if (!workouts || workouts.length === 0) {
-    return []
-  }
-
   return workouts.map((workout) => {
     const exercises = workout.exercises.map((exerciseName) => {
       // Determine number of sets based on exercise and workout type
@@ -310,11 +242,11 @@ export function getWorkoutsWithSets(workouts: Workout[], userProfile: any): any[
         baseWeight = Number.parseInt(userMaxes.overhead)
       } else {
         // Estimate based on equipment type
-        if (exerciseDetails?.equipment.some(eq => eq.includes("Barbell"))) {
+        if (exerciseDetails?.equipment.includes("Barbell")) {
           baseWeight = isCompound ? 60 : 30
-        } else if (exerciseDetails?.equipment.some(eq => eq.includes("Dumbbells"))) {
+        } else if (exerciseDetails?.equipment.includes("Dumbbells")) {
           baseWeight = isCompound ? 20 : 10
-        } else if (exerciseDetails?.equipment.some(eq => eq.includes("Kettlebells"))) {
+        } else if (exerciseDetails?.equipment.includes("Kettlebells")) {
           baseWeight = 16
         } else {
           baseWeight = 0 // Bodyweight or bands
@@ -340,15 +272,8 @@ export function getWorkoutsWithSets(workouts: Workout[], userProfile: any): any[
             reps = [15, 12, 12, 15][index] // Rep scheme for isolation exercises
           }
 
-          // Skip weight for bodyweight exercises
-          if (exerciseDetails?.equipment.includes("No Equipment (Bodyweight only)") && 
-              !exerciseDetails.equipment.some(eq => eq !== "No Equipment (Bodyweight only)" && 
-                                                   !eq.includes("Pull-up Bar"))) {
-            weight = 0
-          }
-          
-          // Ensure minimum weight for equipment-based exercises (but not bodyweight)
-          else if (
+          // Ensure minimum weight for equipment-based exercises
+          if (
             exerciseDetails?.equipment.some((eq) => ["Barbell", "Dumbbells", "Kettlebells"].includes(eq)) &&
             weight < 5
           ) {
@@ -376,3 +301,4 @@ export function getWorkoutsWithSets(workouts: Workout[], userProfile: any): any[
     }
   })
 }
+
