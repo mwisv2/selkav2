@@ -3,12 +3,7 @@ const { getFirestore, collection, addDoc } = require("firebase/firestore")
 
 // Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDhiK93iKbatLYpnxCN7bnviBBqfptWokE",
-  authDomain: "selka-884a0.firebaseapp.com",
-  projectId: "selka-884a0",
-  storageBucket: "selka-884a0.firebasestorage.app",
-  messagingSenderId: "273137511335",
-  appId: "1:273137511335:web:900513256b9910a2c46482"
+  
 }
 
 // Initialize Firebase
